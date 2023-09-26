@@ -1,5 +1,7 @@
 ﻿using System;
 using System.IO;
+using SixLabors.ImageSharp;
+using SixLabors.ImageSharp.Processing;
 
 namespace ChangeExtension
 {
@@ -25,21 +27,41 @@ namespace ChangeExtension
             }
 
             // Loop through each file in the directory.
-            foreach (string filePath in Directory.GetFiles(directoryPath))
+            string[] files = Directory.GetFiles(directoryPath);
+            int counter = 1; // Start the counter at 1.
+            foreach (string filePath in files)
             {
-                // Check if the file extension is .JPG.
-                if (Path.GetExtension(filePath).Equals(".JPG", StringComparison.OrdinalIgnoreCase))
+                // Check if the file extension is .jpg.
+                if (Path.GetExtension(filePath).Equals(".jpg", StringComparison.OrdinalIgnoreCase))
                 {
-                    // Create the new file name with the .jpg extension.
-                    string newFilePath = Path.ChangeExtension(filePath, ".jpg");
+                    // Create the new file name with the counter and .jpg extension.
+                    string newFileName = $"{counter}.jpg";
+                    string newFilePath = Path.Combine(Path.GetDirectoryName(filePath), newFileName);
+
+                    // Resize the image to 30% of its original size.
+                    using (Image image = Image.Load(filePath))
+                    {
+                        image.Mutate(x => x.Resize(new ResizeOptions
+                        {
+                            Size = new Size((int)(image.Width * 0.3), (int)(image.Height * 0.3)),
+                            Mode = ResizeMode.Max
+                        }));
+                        image.Save(newFilePath); // Save the resized image to the new file path.
+                    }
 
                     // Rename the file.
-                    File.Move(filePath, newFilePath);
-                    Console.WriteLine($"Renamed '{filePath}' to '{newFilePath}'");
+                    if (filePath != newFilePath)
+                    {
+                        File.Delete(filePath); // Delete the original file.
+                    }
+
+                    Console.WriteLine($"Resized and renamed '{filePath}' to '{newFilePath}'");
+
+                    counter++; // Increment the counter.
                 }
             }
 
-            Console.WriteLine("Finished renaming files.");
+            Console.WriteLine("Finished resizing and renaming files.");
         }
     }
 }
